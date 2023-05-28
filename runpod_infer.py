@@ -11,7 +11,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-prod = False
+prod = True
 
 MODEL = predict.Predictor()
 MODEL.setup()

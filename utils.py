@@ -24,15 +24,20 @@ def create_mask(seg_img, color, dillation_size=5, dillation_iters=2, convex_hull
     
     if convex_hull:
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        hull = cv2.convexHull(contours[0])
+        hull_list = []
+        for contour in contours:
+            hull = cv2.convexHull(contour)
+            hull_list.append(hull)
         mask = np.zeros_like(mask)
-        cv2.fillPoly(mask, [hull], 255)
+
+        for hull in hull_list:
+            cv2.fillPoly(mask, [hull], 255)
     
     mask = Image.fromarray(mask).convert('RGB')
     return mask
 
 if __name__=="__main__":
-    seg_img = cv2.imread("descarga (6).png")
+    seg_img = cv2.imread("seg.png")
     seg_img = cv2.cvtColor(seg_img, cv2.COLOR_BGR2RGB)
-    mask = create_mask(seg_img, [11,102,255], dillation_size=5, convex_hull=True)
-    mask.save("mask.png")
+    mask = create_mask(seg_img, [11,102,255], dillation_size=5, convex_hull=False)
+    mask.save("mask2.png")
