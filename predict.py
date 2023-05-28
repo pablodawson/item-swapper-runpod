@@ -39,7 +39,8 @@ class Predictor(BasePredictor):
 
         self.inpaint_pipe = StableDiffusionInpaintPipeline.from_pretrained(
                             "runwayml/stable-diffusion-inpainting",
-                            torch_dtype=torch.float16,
+                            cache_dir=MODEL_CACHE,
+                            local_files_only=True,
                             ).to("cuda")
         
         self.inpaint_pipe.enable_xformers_memory_efficient_attention()
@@ -83,13 +84,6 @@ class Predictor(BasePredictor):
         '''        
         seed = int.from_bytes(os.urandom(2), "big")
 
-        if width * height > 786432:
-            raise ValueError(
-                "Maximum size is 1024x768 or 768x1024 pixels, because of memory limits."
-            )
-
-        extra_kwargs = {}
-
         if not image:
             raise ValueError("No image provided")
 
@@ -113,11 +107,11 @@ class Predictor(BasePredictor):
             color = item.get("color")
 
             mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False)).resize((width, height))
-            apply_lora(self.inpaint_pipe, f"loras/{lora}.safetensors", weight=weight)
+            apply_lora(pipe, f"loras/{lora}.safetensors", weight=weight)
 
             timestart = time.time()
         
-            image = self.inpaint_pipe(prompt, 
+            image = pipe(prompt, 
                         image, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, mask_image=mask, 
                         width=width, height=height).images[0]
 
@@ -147,6 +141,3 @@ def make_scheduler(name, config):
         "PNDM": PNDMScheduler.from_config(config),
         "K-LMS": LMSDiscreteScheduler.from_config(config)
     }[name]
-
-if __name__ == "__main__":
-    Predictor().setup()

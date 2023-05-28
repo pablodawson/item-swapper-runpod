@@ -8,5 +8,5 @@ os.makedirs("diffusers-cache", exist_ok=True)
 
 
 pipe = StableDiffusionInpaintPipeline.from_pretrained(
-    "runwayml/stable-diffusion-v1-5",
+    "runwayml/stable-diffusion-inpainting",
     cache_dir="diffusers-cache")

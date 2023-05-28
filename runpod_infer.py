@@ -7,6 +7,8 @@ import runpod
 from runpod.serverless.utils import rp_download, rp_upload, rp_cleanup
 from runpod.serverless.utils.rp_validator import validate
 
+prod = False
+
 MODEL = predict.Predictor()
 MODEL.setup()
 
@@ -66,9 +68,10 @@ def run(job):
     validated_input = validated_input['validated_input']
 
     # Download input objects
-    job_input['image'], job_input['seg'] = rp_download.download_input_objects(
-        [job_input.get('image', None), job_input.get('seg', None)]
-    )  # pylint: disable=unbalanced-tuple-unpacking
+    if prod:
+        job_input['image'], job_input['seg'] = rp_download.download_input_objects(
+            [job_input.get('image', None), job_input.get('seg', None)]
+        )  # pylint: disable=unbalanced-tuple-unpacking
 
     img_path = MODEL.predict(
         width=job_input.get('width', 512),
@@ -81,15 +84,30 @@ def run(job):
     )
 
     job_output = []
-    image_url = rp_upload.upload_image(job['id'], img_path, 0)
+
+    if prod:
+        image_url = rp_upload.upload_image(job['id'], img_path, 0)
 
     job_output.append({
         "image": image_url
     })
 
     # Remove downloaded input objects
-    rp_cleanup.clean(['input_objects'])
+    if prod:
+        rp_cleanup.clean(['input_objects'])
 
     return job_output
 
-runpod.serverless.start({"handler": run})
+if prod:
+    runpod.serverless.start({"handler": run})
+else:
+    job = {}
+    job['id'] = 'test'
+
+    swap_list = [{"color": [11,102,255], "lora": "rosjf-05", "prompt": "a room with a sky blue rosjf sofa", "convex_hull": True}]
+    image = "room.jpg"
+    seg = "seg.png"
+
+    job['input'] = { "image": image, "seg": seg, "swap": swap_list }
+
+    run(job)
