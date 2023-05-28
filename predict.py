@@ -23,7 +23,7 @@ import json
 from utils import *
 
 from PIL import Image
-from cog import BasePredictor, Input, Path, File
+from cog import BasePredictor, Input, Path
 from xformers.ops import MemoryEfficientAttentionFlashAttentionOp
 
 MODEL_CACHE = "diffusers-cache"

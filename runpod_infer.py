@@ -8,7 +8,7 @@ from runpod.serverless.utils import rp_download, rp_upload, rp_cleanup
 from runpod.serverless.utils.rp_validator import validate
 import json
 
-prod = False
+prod = True
 
 MODEL = predict.Predictor()
 MODEL.setup()
