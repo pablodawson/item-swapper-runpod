@@ -12,6 +12,7 @@ build:
     - "xformers==0.0.16"
     - "runpod==0.9.0"
     - "opencv-python"
+    - "safetensors"
   system_packages:
     - "python3-opencv"
   run:

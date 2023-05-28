@@ -2,7 +2,7 @@
 
 import os
 from typing import List
-
+import time
 import torch
 from diffusers import (
     StableDiffusionInpaintPipeline,
@@ -113,12 +113,12 @@ class Predictor(BasePredictor):
             color = item.get("color")
 
             mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False)).resize((width, height))
-            apply_lora(pipeline, f"loras/{lora}.safetensors", weight=weight)
+            apply_lora(self.inpaint_pipe, f"loras/{lora}.safetensors", weight=weight)
 
             timestart = time.time()
         
-            image = pipeline(prompt, 
-                        image, num_inference_steps=inference_steps, guidance_scale=guidance_scale, mask_image=mask, 
+            image = self.inpaint_pipe(prompt, 
+                        image, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, mask_image=mask, 
                         width=width, height=height).images[0]
 
             print("Time to add item: ", time.time() - timestart)
@@ -136,7 +136,6 @@ def make_scheduler(name, config):
     return {
         "DDIM": DDIMScheduler.from_config(config),
         "DDPM": DDPMScheduler.from_config(config),
-        # "DEIS": DEISMultistepScheduler.from_config(config),
         "DPM-M": DPMSolverMultistepScheduler.from_config(config),
         "DPM-S": DPMSolverSinglestepScheduler.from_config(config),
         "EULER-A": EulerAncestralDiscreteScheduler.from_config(config),
@@ -145,12 +144,9 @@ def make_scheduler(name, config):
         "IPNDM": IPNDMScheduler.from_config(config),
         "KDPM2-A": KDPM2AncestralDiscreteScheduler.from_config(config),
         "KDPM2-D": KDPM2DiscreteScheduler.from_config(config),
-        # "KARRAS-VE": KarrasVeScheduler.from_config(config),
         "PNDM": PNDMScheduler.from_config(config),
-        # "RE-PAINT": RePaintScheduler.from_config(config),
-        # "SCORE-VE": ScoreSdeVeScheduler.from_config(config),
-        # "SCORE-VP": ScoreSdeVpScheduler.from_config(config),
-        # "UN-CLIPS": UnCLIPScheduler.from_config(config),
-        # "VQD": VQDiffusionScheduler.from_config(config),
         "K-LMS": LMSDiscreteScheduler.from_config(config)
     }[name]
+
+if __name__ == "__main__":
+    Predictor().setup()
