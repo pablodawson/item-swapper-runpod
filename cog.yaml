@@ -19,3 +19,4 @@ build:
     - pip install triton
   
 predict: "predict.py:Predictor"
+image: "kays111/item-swapper:latest"

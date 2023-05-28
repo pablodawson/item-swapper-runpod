@@ -6,6 +6,7 @@ import predict
 import runpod
 from runpod.serverless.utils import rp_download, rp_upload, rp_cleanup
 from runpod.serverless.utils.rp_validator import validate
+import json
 
 prod = False
 
@@ -73,6 +74,9 @@ def run(job):
             [job_input.get('image', None), job_input.get('seg', None)]
         )  # pylint: disable=unbalanced-tuple-unpacking
 
+    # Convert swap list to json
+    swap = json.dumps(job_input['swap'])
+    
     img_path = MODEL.predict(
         width=job_input.get('width', 512),
         image=job_input['image'],
@@ -80,7 +84,7 @@ def run(job):
         num_inference_steps=job_input.get('num_inference_steps', 50),
         guidance_scale=job_input['guidance_scale'],
         scheduler=job_input.get('scheduler', "K-LMS"),
-        swap=job_input['swap']
+        swap=swap
     )
 
     job_output = []

@@ -19,11 +19,11 @@ from diffusers import (
     PNDMScheduler,
     LMSDiscreteScheduler
 )
-
+import json
 from utils import *
 
 from PIL import Image
-from cog import BasePredictor, Input, Path
+from cog import BasePredictor, Input, Path, File
 from xformers.ops import MemoryEfficientAttentionFlashAttentionOp
 
 MODEL_CACHE = "diffusers-cache"
@@ -74,25 +74,26 @@ class Predictor(BasePredictor):
                      "HEUN", "IPNDM", "KDPM2-A", "KDPM2-D", "PNDM",  "K-LMS"],
             description="Choose a scheduler. If you use an init image, PNDM will be used",
         ),
-        swap : list = Input(
-            description="Items to be swapped",
+        swap : str = Input(
+            description="Items to be swapped, json format",
             default=None
         )
     ) -> Path:
         '''
         Run a single prediction on the model
         '''        
+        # Convert swap json to list
+        swap = json.loads(swap)
+
         seed = int.from_bytes(os.urandom(2), "big")
 
         if not image:
             raise ValueError("No image provided")
 
-        pipe = self.inpaint_pipe
-
         image = Image.open(image).convert("RGB")
         seg = Image.open(seg).convert("RGB")
 
-        pipe.scheduler = make_scheduler(scheduler, pipe.scheduler.config)
+        self.inpaint_pipe.scheduler = make_scheduler(scheduler, self.inpaint_pipe.scheduler.config)
         generator = torch.Generator("cuda").manual_seed(seed)
 
         height = int(width * image.height / image.width)
@@ -107,15 +108,18 @@ class Predictor(BasePredictor):
             color = item.get("color")
 
             mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False)).resize((width, height))
-            apply_lora(pipe, f"loras/{lora}.safetensors", weight=weight)
+
+            timestart = time.time()
+            apply_lora(self.inpaint_pipe, f"loras/{lora}.safetensors", weight=weight)
+            print("Time to load lora: ", time.time() - timestart)
 
             timestart = time.time()
         
-            image = pipe(prompt, 
+            image = self.inpaint_pipe(prompt, 
                         image, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, mask_image=mask, 
                         width=width, height=height).images[0]
 
-            print("Time to add item: ", time.time() - timestart)
+            print("Time to inpaint item: ", time.time() - timestart)
         
         output_path = f"/tmp/output.png"
         image.save(output_path)
