@@ -4,11 +4,14 @@ import os
 import predict
 
 import runpod
-from runpod.serverless.utils import rp_download, rp_upload, rp_cleanup
+from runpod.serverless.utils import rp_cleanup
 from runpod.serverless.utils.rp_validator import validate
 import json
+import base64
+from io import BytesIO
+from PIL import Image
 
-prod = True
+prod = False
 
 MODEL = predict.Predictor()
 MODEL.setup()
@@ -20,12 +23,12 @@ INPUT_SCHEMA = {
         'default': 512,
         'constraints': lambda width: width in [128, 256, 384, 448, 512, 576, 640, 704, 768]
     },
-    'image': {
+    'image_b64': {
         'type': str,
         'required': True,
         'default': None
     },
-    'seg': {
+    'seg_b64': {
         'type': str,
         'required': True,
         'default': None
@@ -68,19 +71,20 @@ def run(job):
         return {"error": validated_input['errors']}
     validated_input = validated_input['validated_input']
 
-    # Download input objects
-    if prod:
-        job_input['image'], job_input['seg'] = rp_download.download_input_objects(
-            [job_input.get('image', None), job_input.get('seg', None)]
-        )  # pylint: disable=unbalanced-tuple-unpacking
+    # b64 -> Image
+    image_bytes = base64.b64decode(job_input['image_b64'].encode('utf-8'))
+    seg_bytes = base64.b64decode(job_input['seg_b64'].encode('utf-8'))
+
+    image = Image.open(BytesIO(image_bytes)).save('input_objects/image.png')
+    seg = Image.open(BytesIO(seg_bytes)).save('input_objects/seg.png')
 
     # Convert swap list to json
     swap = json.dumps(job_input['swap'])
     
     img_path = MODEL.predict(
         width=job_input.get('width', 512),
-        image=job_input['image'],
-        seg=job_input['seg'],
+        image= "input_objects/image.png",
+        seg= "input_objects/seg.png",
         num_inference_steps=job_input.get('num_inference_steps', 50),
         guidance_scale=job_input['guidance_scale'],
         scheduler=job_input.get('scheduler', "K-LMS"),
@@ -89,11 +93,12 @@ def run(job):
 
     job_output = []
 
-    if prod:
-        image_url = rp_upload.upload_image(job['id'], img_path, 0)
+    buffered = BytesIO()
+    Image.open(img_path).save(buffered, format="JPEG")
+    output = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
     job_output.append({
-        "image": image_url
+        "image_b64": output
     })
 
     # Remove downloaded input objects
@@ -112,6 +117,12 @@ else:
     image = "room.jpg"
     seg = "seg.png"
 
-    job['input'] = { "image": image, "seg": seg, "swap": swap_list }
+    # to base64
+    with open(image, "rb") as image_file:
+        image = base64.b64encode(image_file.read()).decode('utf-8')
+    with open(seg, "rb") as seg_file:
+        seg = base64.b64encode(seg_file.read()).decode('utf-8')
+
+    job['input'] = { "image_b64": image, "seg_b64": seg, "swap": swap_list }
 
     run(job)
