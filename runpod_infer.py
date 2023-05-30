@@ -11,7 +11,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-prod = False
+prod = True
 
 MODEL = predict.Predictor()
 MODEL.setup()
@@ -140,5 +140,5 @@ else:
         seg = base64.b64encode(seg_file.read()).decode('utf-8')
 
     job['input'] = { "image_b64": image, "seg_b64": seg, "swap": swap_list }
-
+    
     run(job)
