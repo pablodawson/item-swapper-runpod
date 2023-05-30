@@ -118,6 +118,7 @@ def run(job):
     # Remove downloaded input objects
     if prod:
         rp_cleanup.clean(['input_objects'])
+        rp_cleanup.clean(['tmp'])
 
     return job_output
 
