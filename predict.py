@@ -77,8 +77,13 @@ class Predictor(BasePredictor):
         swap : str = Input(
             description="Items to be swapped, json format",
             default=None
+        ),
+        output_format: str = Input(
+            description="Output format",
+            default="all-in-one",
+            choices=["all-in-one", "instances"]
         )
-    ) -> Path:
+    ) -> List[Path]:
         '''
         Run a single prediction on the model
         '''        
@@ -100,6 +105,7 @@ class Predictor(BasePredictor):
         height = height - (height % 8)
         
         image = image.resize((width, height), Image.BILINEAR)
+        output_dirs = []
 
         for item in swap:
             lora = item.get("lora")
@@ -108,23 +114,35 @@ class Predictor(BasePredictor):
             color = item.get("color")
 
             mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False)).resize((width, height))
-
+            
             timestart = time.time()
             apply_lora(self.inpaint_pipe, f"loras/{lora}.safetensors", weight=weight)
             print("Time to load lora: ", time.time() - timestart)
 
             timestart = time.time()
         
-            image = self.inpaint_pipe(prompt, 
+            output = self.inpaint_pipe(prompt, 
                         image, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, mask_image=mask, 
                         width=width, height=height).images[0]
+            
+            # "Pegar" la imagen solo en la mascara
+            if (output_format == "all-in-one"):
+                image = paste(output, image, mask)
 
+            # Agregar la imagen con mascara a la lista de outputs
+            else:
+                output = apply_mask(output, mask)
+                output.save(f"/tmp/{lora}.png", optimize=True, quality=30)
+                output_dirs.append(f"/tmp/{lora}.png")
+            
             print("Time to inpaint item: ", time.time() - timestart)
         
-        output_path = f"/tmp/output.png"
-        image.save(output_path)
+        if (output_format == "all-in-one"):
+            output_path = f"/tmp/output.png"
+            image.save(output_path, optimize=True, quality=30)
+            output_dirs.append(output_path)
 
-        return output_path
+        return output_dirs
 
 
 def make_scheduler(name, config):

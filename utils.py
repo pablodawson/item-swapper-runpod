@@ -36,6 +36,27 @@ def create_mask(seg_img, color, dillation_size=5, dillation_iters=2, convex_hull
     mask = Image.fromarray(mask).convert('RGB')
     return mask
 
+def paste(output, original, mask):
+    mask_np = np.array(mask)
+    mask_np  = cv2.cvtColor(mask_np, cv2.COLOR_RGB2GRAY)
+
+    output_np = np.array(output)
+    original_np = np.array(original)
+
+    original_np[mask_np == 255] = output_np[mask_np == 255]
+
+    return Image.fromarray(original_np)
+
+def apply_mask(image, mask):
+    mask_np = np.array(mask)
+    mask_np  = cv2.cvtColor(mask_np, cv2.COLOR_RGB2GRAY)
+
+    output_np = np.array(image)
+    output_np = cv2.cvtColor(output_np, cv2.COLOR_RGB2RGBA)
+    output_np[mask_np == 0] = [0,0,0,0]
+
+    return Image.fromarray(output_np)
+
 if __name__=="__main__":
     seg_img = cv2.imread("seg.png")
     seg_img = cv2.cvtColor(seg_img, cv2.COLOR_BGR2RGB)

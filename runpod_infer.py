@@ -11,7 +11,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-prod = True
+prod = False
 
 MODEL = predict.Predictor()
 MODEL.setup()
@@ -53,6 +53,18 @@ INPUT_SCHEMA = {
     'swap': {
         'type': list,
         'required': True,
+    }, 
+    'output-format':{
+        'type': str,
+        'required': False,
+        'default': "all-in-one",
+        'constraints': lambda output_format: output_format in ["all-in-one", "instances"]
+    },
+    'delivery': {
+        'type': str,
+        'required': False,
+        'default': "base64",
+        'constraints': lambda delivery: delivery in ["base64", "s3"]
     }
 }
 
@@ -81,26 +93,28 @@ def run(job):
     # Convert swap list to json
     swap = json.dumps(job_input['swap'])
     
-    img_path = MODEL.predict(
+    img_paths = MODEL.predict(
         width=job_input.get('width', 512),
         image= "input_objects/image.png",
         seg= "input_objects/seg.png",
         num_inference_steps=job_input.get('num_inference_steps', 50),
         guidance_scale=job_input['guidance_scale'],
         scheduler=job_input.get('scheduler', "K-LMS"),
+        output_format=job_input.get('output-format', "all-in-one"),
         swap=swap
     )
 
     job_output = []
 
-    buffered = BytesIO()
-    Image.open(img_path).save(buffered, format="JPEG")
-    output = base64.b64encode(buffered.getvalue()).decode('utf-8')
-
-    job_output.append({
-        "image_b64": output
-    })
-
+    for path in img_paths:
+        buffered = BytesIO()
+        Image.open(path).save(buffered, format="JPEG")
+        output = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    
+        job_output.append({
+            "image_b64": output
+        })
+    
     # Remove downloaded input objects
     if prod:
         rp_cleanup.clean(['input_objects'])
@@ -113,7 +127,9 @@ else:
     job = {}
     job['id'] = 'test'
 
-    swap_list = [{"color": [11,102,255], "lora": "rosjf-05", "prompt": "a room with a sky blue rosjf sofa", "convex_hull": True}]
+    swap_list = [{"color": [11,102,255], "lora": "rosjf-05", "prompt": "a room with a sky blue rosjf sofa", 
+                  "convex_hull": True, "output-format": "all-in-one", "width": 384}]
+
     image = "room.jpg"
     seg = "seg.png"
 
