@@ -63,8 +63,8 @@ def apply_mask(image, mask):
 
     output_np = np.array(image)
     output_np = cv2.cvtColor(output_np, cv2.COLOR_RGB2RGBA)
-    output_np[:,:,3] = alpha[:,:,0]
-
+    output_np[:,:,3] = alpha
+    
     return Image.fromarray(output_np)
 
 if __name__=="__main__":
