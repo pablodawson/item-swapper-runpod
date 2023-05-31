@@ -38,22 +38,32 @@ def create_mask(seg_img, color, dillation_size=5, dillation_iters=2, convex_hull
 
 def paste(output, original, mask):
     mask_np = np.array(mask)
-    mask_np  = cv2.cvtColor(mask_np, cv2.COLOR_RGB2GRAY)
 
+    mask_np = cv2.dilate(mask_np, np.ones((8,8),np.uint8), iterations = 2)
+    mask_np  = cv2.cvtColor(mask_np, cv2.COLOR_RGB2GRAY)
+    ksize = (20, 20)
+    alpha = cv2.blur(mask_np, ksize)
+    alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2RGB)/255
+    
     output_np = np.array(output)
     original_np = np.array(original)
 
-    original_np[mask_np == 255] = output_np[mask_np == 255]
+    masked_fg = alpha * output_np
+    masked_bg = (1.0 - alpha)* original_np
 
-    return Image.fromarray(original_np)
+    output = np.uint8(cv2.addWeighted(masked_fg, 1, masked_bg, 1, 0.0))
+
+    return Image.fromarray(output)
 
 def apply_mask(image, mask):
     mask_np = np.array(mask)
     mask_np  = cv2.cvtColor(mask_np, cv2.COLOR_RGB2GRAY)
+    ksize = (20, 20)
+    alpha = cv2.blur(mask_np, ksize)
 
     output_np = np.array(image)
     output_np = cv2.cvtColor(output_np, cv2.COLOR_RGB2RGBA)
-    output_np[mask_np == 0] = [0,0,0,0]
+    output_np[:,:,3] = alpha[:,:,0]
 
     return Image.fromarray(output_np)
 
