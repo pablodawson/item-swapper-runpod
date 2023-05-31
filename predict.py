@@ -106,7 +106,7 @@ class Predictor(BasePredictor):
         
         image = image.resize((width, height), Image.BILINEAR)
         output_dirs = []
-
+        
         for item in swap:
             lora = item.get("lora")
             weight = item.get("weight", 1.35)
@@ -132,13 +132,13 @@ class Predictor(BasePredictor):
             # Agregar la imagen con mascara a la lista de outputs
             else:
                 output = apply_mask(output, mask)
-                output.save(f"/tmp/{lora}.png", optimize=True, quality=30)
-                output_dirs.append(f"/tmp/{lora}.png")
+                output.save(f"tmp/{lora}.png", optimize=True, quality=30)
+                output_dirs.append(f"tmp/{lora}.png")
             
             print("Time to inpaint item: ", time.time() - timestart)
         
         if (output_format == "all-in-one"):
-            output_path = f"/tmp/output.png"
+            output_path = f"tmp/output.png"
             image.save(output_path, optimize=True, quality=30)
             output_dirs.append(output_path)
 

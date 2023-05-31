@@ -11,7 +11,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-prod = True
+prod = False
 
 MODEL = predict.Predictor()
 MODEL.setup()
@@ -129,7 +129,7 @@ else:
     job['id'] = 'test'
 
     swap_list = [{"color": [11,102,255], "lora": "rosjf-05", "prompt": "a room with a sky blue rosjf sofa", 
-                  "convex_hull": True, "output-format": "all-in-one", "width": 384}]
+                  "convex_hull": True, "output-format": "all-in-one", "width": 128}]
 
     image = "room.jpg"
     seg = "seg.png"
