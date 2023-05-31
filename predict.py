@@ -115,6 +115,7 @@ class Predictor(BasePredictor):
             weight = item.get("weight", 1.35)
             prompt = item.get("prompt", f"A photo of {lora}")
             color = item.get("color")
+            token = item.get("token", lora)
 
             mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False)).resize((width, height))
             
@@ -135,8 +136,8 @@ class Predictor(BasePredictor):
             # Agregar la imagen con mascara a la lista de outputs
             else:
                 output = apply_mask(output, mask)
-                output.save(f"tmp/{lora}.png", optimize=True, quality=30)
-                output_dirs.append(f"tmp/{lora}.png")
+                output.save(f"tmp/{token}.png", optimize=True, quality=50)
+                output_dirs.append(f"tmp/{token}.png")
             
             print("Time to inpaint item: ", time.time() - timestart)
         

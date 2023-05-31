@@ -117,7 +117,8 @@ def run(job):
         output = base64.b64encode(buffered.getvalue()).decode('utf-8')
     
         job_output.append({
-            "image_b64": output
+            "image_b64": output,
+            "token": path.split("/")[-1].split(".")[0]
         })
     
     # Remove downloaded input objects
