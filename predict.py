@@ -107,6 +107,9 @@ class Predictor(BasePredictor):
         image = image.resize((width, height), Image.BILINEAR)
         output_dirs = []
         
+        if (not os.path.exists("tmp")):
+            os.mkdir("tmp")
+        
         for item in swap:
             lora = item.get("lora")
             weight = item.get("weight", 1.35)

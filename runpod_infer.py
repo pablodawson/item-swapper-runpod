@@ -11,7 +11,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-prod = False
+prod = True
 
 MODEL = predict.Predictor()
 MODEL.setup()
@@ -54,7 +54,7 @@ INPUT_SCHEMA = {
         'type': list,
         'required': True,
     }, 
-    'output-format':{
+    'output_format':{
         'type': str,
         'required': False,
         'default': "all-in-one",
@@ -100,7 +100,7 @@ def run(job):
         num_inference_steps=job_input.get('num_inference_steps', 50),
         guidance_scale=job_input['guidance_scale'],
         scheduler=job_input.get('scheduler', "K-LMS"),
-        output_format=job_input.get('output-format', "all-in-one"),
+        output_format=job_input.get('output_format', "all-in-one"),
         swap=swap
     )
 
@@ -108,7 +108,12 @@ def run(job):
 
     for path in img_paths:
         buffered = BytesIO()
-        Image.open(path).save(buffered, format="JPEG")
+        
+        if (job_input.get('output_format', "all-in-one") == "all-in-one"):
+            Image.open(path).save(buffered, format="JPEG")
+        else:
+            Image.open(path).save(buffered, format="PNG")
+        
         output = base64.b64encode(buffered.getvalue()).decode('utf-8')
     
         job_output.append({
@@ -117,9 +122,8 @@ def run(job):
     
     # Remove downloaded input objects
     if prod:
-        rp_cleanup.clean(['input_objects'])
-        rp_cleanup.clean(['tmp'])
-
+        rp_cleanup.clean(['input_objects', 'tmp'])
+    
     return job_output
 
 if prod:
@@ -129,7 +133,7 @@ else:
     job['id'] = 'test'
 
     swap_list = [{"color": [11,102,255], "lora": "rosjf-05", "prompt": "a room with a sky blue rosjf sofa", 
-                  "convex_hull": True, "output-format": "all-in-one", "width": 128}]
+                  "convex_hull": True, "output-format": "all-in-one", "width": 255}]
 
     image = "room.jpg"
     seg = "seg.png"
