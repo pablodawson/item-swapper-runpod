@@ -84,23 +84,26 @@ def run(job):
     validated_input = validated_input['validated_input']
 
     # b64 -> Image
-    image_bytes = base64.b64decode(job_input['image_b64'].encode('utf-8'))
-    seg_bytes = base64.b64decode(job_input['seg_b64'].encode('utf-8'))
+    image_bytes = base64.b64decode(validated_input['image_b64'].encode('utf-8'))
+    seg_bytes = base64.b64decode(validated_input['seg_b64'].encode('utf-8'))
 
+    if not os.path.exists("input_objects"):
+        os.mkdir("input_objects")
+    
     image = Image.open(BytesIO(image_bytes)).save('input_objects/image.png')
     seg = Image.open(BytesIO(seg_bytes)).save('input_objects/seg.png')
 
     # Convert swap list to json
-    swap = json.dumps(job_input['swap'])
+    swap = json.dumps(validated_input['swap'])
     
     img_paths = MODEL.predict(
-        width=job_input.get('width', 512),
+        width=validated_input.get('width', 512),
         image= "input_objects/image.png",
         seg= "input_objects/seg.png",
-        num_inference_steps=job_input.get('num_inference_steps', 50),
-        guidance_scale=job_input['guidance_scale'],
-        scheduler=job_input.get('scheduler', "K-LMS"),
-        output_format=job_input.get('output_format', "all-in-one"),
+        num_inference_steps=validated_input.get('num_inference_steps', 50),
+        guidance_scale=validated_input['guidance_scale'],
+        scheduler=validated_input.get('scheduler', "K-LMS"),
+        output_format=validated_input.get('output_format', "all-in-one"),
         swap=swap
     )
 
@@ -109,7 +112,7 @@ def run(job):
     for path in img_paths:
         buffered = BytesIO()
         
-        if (job_input.get('output_format', "all-in-one") == "all-in-one"):
+        if (validated_input.get('output_format', "all-in-one") == "all-in-one"):
             Image.open(path).save(buffered, format="JPEG")
         else:
             Image.open(path).save(buffered, format="PNG")
@@ -134,8 +137,8 @@ else:
     job['id'] = 'test'
 
     swap_list = [{"color": [11,102,255], "lora": "rosjf-05", "prompt": "a room with a sky blue rosjf sofa", 
-                  "convex_hull": True, "output-format": "all-in-one", "width": 255}]
-
+                  "convex_hull": True, "output-format": "all-in-one"}]
+    
     image = "room.jpg"
     seg = "seg.png"
 
@@ -145,6 +148,6 @@ else:
     with open(seg, "rb") as seg_file:
         seg = base64.b64encode(seg_file.read()).decode('utf-8')
 
-    job['input'] = { "image_b64": image, "seg_b64": seg, "swap": swap_list }
+    job['input'] = { "image_b64": image, "seg_b64": seg, "swap": swap_list , "width": 256}
     
     run(job)

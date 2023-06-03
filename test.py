@@ -15,7 +15,8 @@ with open(image, "rb") as image_file:
 with open(seg, "rb") as seg_file:
     seg = base64.b64encode(seg_file.read()).decode('utf-8')
 
-model_input = { "image_b64": image, "seg_b64": seg, "swap": swap_list, "scheduler": "DPM-M", "width": 768, "guidance_scale": 12, "num_inference_steps": 16}
+model_input = { "image_b64": image, "seg_b64": seg, "swap": swap_list, 
+               "scheduler": "DPM-M", "width": 512, "guidance_scale": 12, "num_inference_steps": 16, "output_format": "instances"}
 
 timestart = time.time()
 run_request = endpoint.run(
