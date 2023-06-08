@@ -82,6 +82,10 @@ class Predictor(BasePredictor):
             description="Output format",
             default="all-in-one",
             choices=["all-in-one", "instances"]
+        ),
+        lora_folder: str = Input(
+            description="Folder where the loras are stored",
+            default="loras"
         )
     ) -> List[Path]:
         '''
@@ -120,7 +124,7 @@ class Predictor(BasePredictor):
             mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False)).resize((width, height))
             
             timestart = time.time()
-            apply_lora(self.inpaint_pipe, f"loras/{lora}.safetensors", weight=weight)
+            apply_lora(self.inpaint_pipe, f"{lora_folder}/{lora}.safetensors", weight=weight)
             print("Time to load lora: ", time.time() - timestart)
 
             timestart = time.time()

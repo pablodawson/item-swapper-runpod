@@ -65,6 +65,11 @@ INPUT_SCHEMA = {
         'required': False,
         'default': "base64",
         'constraints': lambda delivery: delivery in ["base64", "s3"]
+    },
+    'use_network_volume': {
+        'type': bool,
+        'required': False,
+        'default': False
     }
 }
 
@@ -95,6 +100,11 @@ def run(job):
 
     # Convert swap list to json
     swap = json.dumps(validated_input['swap'])
+
+    if (validated_input.get('use_network_volume', False)):
+        lora_path = "../runpod-volume/loras"
+    else:
+        lora_path = "loras"
     
     img_paths = MODEL.predict(
         width=validated_input.get('width', 512),
@@ -104,7 +114,8 @@ def run(job):
         guidance_scale=validated_input['guidance_scale'],
         scheduler=validated_input.get('scheduler', "K-LMS"),
         output_format=validated_input.get('output_format', "all-in-one"),
-        swap=swap
+        swap=swap,
+        lora_folder = lora_path
     )
 
     job_output = []
