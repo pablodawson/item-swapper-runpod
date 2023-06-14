@@ -3,7 +3,7 @@ from safetensors.torch import load_file
 import cv2
 from PIL import Image
 from safetensors.torch import load_file
-#from sdscripts.networks.lora import create_network_from_weights
+from sdscripts.networks.lora import create_network_from_weights
 import torch
 
 
@@ -23,11 +23,11 @@ def create_reference_images(image, mask, min_size=200, padding=30, width=512):
     # Create square bounding box
     bbox = mask.getbbox()
     center = (bbox[0] + bbox[2]) // 2, (bbox[1] + bbox[3]) // 2
-    width, height = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    size = max(width, height) + padding
+    width_, height_ = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    size = max(width_, height_) + padding
     size = max(size, min_size)
     mask_bbox = (center[0] - size // 2, center[1] - size // 2, center[0] + size // 2, center[1] + size // 2)
-
+    
     if (mask_bbox[0] < 0):
         mask_bbox = (0, mask_bbox[1], mask_bbox[2] - mask_bbox[0], mask_bbox[3])
     if (mask_bbox[1] < 0):
@@ -41,7 +41,10 @@ def create_reference_images(image, mask, min_size=200, padding=30, width=512):
     
     image_bbox = tuple([int(x * image.width/mask.width) for x in mask_bbox])
 
-    return image.crop(image_bbox).resize((width,width)), mask.crop(mask_bbox).resize((width,width)), image_bbox
+    image_ref = image.crop(image_bbox).resize((width,width))
+    mask_ref = mask.crop(mask_bbox).resize((width,width))
+
+    return image_ref, mask_ref, image_bbox
 
 
 def create_mask(seg_img, color, dillation_size=5, dillation_iters=2, convex_hull=False):

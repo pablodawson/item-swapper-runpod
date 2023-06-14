@@ -124,14 +124,17 @@ class Predictor(BasePredictor):
 
             mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False))
 
-            image_ref, mask_ref, image_bbox, mask_bbox = create_reference_images(image, mask, min_size=200, padding=30, width=width)
+            image_ref, mask_ref, image_bbox = create_reference_images(image, mask, min_size=200, padding=30, width=width)
+
+            image_ref.save("test.jpg")
+            mask_ref.save("test_mask.jpg")
             
             timestart = time.time()
             apply_lora(self.inpaint_pipe, f"{lora_folder}/{lora}.safetensors", weight=weight)
             print("Time to load lora: ", time.time() - timestart)
 
             timestart = time.time()
-        
+
             output = self.inpaint_pipe(prompt, 
                         image_ref, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, mask_image=mask_ref, 
                         width=width, height=width).images[0]
