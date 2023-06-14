@@ -159,6 +159,6 @@ else:
     with open(seg, "rb") as seg_file:
         seg = base64.b64encode(seg_file.read()).decode('utf-8')
 
-    job['input'] = { "image_b64": image, "seg_b64": seg, "swap": swap_list , "width": 256}
+    job['input'] = { "image_b64": image, "seg_b64": seg, "swap": swap_list , "width": 512}
     
     run(job)

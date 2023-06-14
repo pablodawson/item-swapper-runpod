@@ -27,7 +27,7 @@ def create_reference_images(image, mask, min_size=200, padding=30, width=512):
     size = max(width_, height_) + padding
     size = max(size, min_size)
     mask_bbox = (center[0] - size // 2, center[1] - size // 2, center[0] + size // 2, center[1] + size // 2)
-    
+
     if (mask_bbox[0] < 0):
         mask_bbox = (0, mask_bbox[1], mask_bbox[2] - mask_bbox[0], mask_bbox[3])
     if (mask_bbox[1] < 0):
@@ -41,9 +41,9 @@ def create_reference_images(image, mask, min_size=200, padding=30, width=512):
     
     image_bbox = tuple([int(x * image.width/mask.width) for x in mask_bbox])
 
-    image_ref = image.crop(image_bbox).resize((width,width))
+    image_ref = image.crop(image_bbox)
     mask_ref = mask.crop(mask_bbox).resize((width,width))
-
+    
     return image_ref, mask_ref, image_bbox
 
 

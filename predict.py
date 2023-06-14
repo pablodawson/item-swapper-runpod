@@ -125,9 +125,6 @@ class Predictor(BasePredictor):
             mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False))
 
             image_ref, mask_ref, image_bbox = create_reference_images(image, mask, min_size=200, padding=30, width=width)
-
-            image_ref.save("test.jpg")
-            mask_ref.save("test_mask.jpg")
             
             timestart = time.time()
             apply_lora(self.inpaint_pipe, f"{lora_folder}/{lora}.safetensors", weight=weight)
@@ -136,12 +133,13 @@ class Predictor(BasePredictor):
             timestart = time.time()
 
             output = self.inpaint_pipe(prompt, 
-                        image_ref, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, mask_image=mask_ref, 
+                        image_ref.resize((width,width)), num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, mask_image=mask_ref, 
                         width=width, height=width).images[0]
-            
+            output.resize(image_ref.size)
+
             # "Pegar" la imagen solo en la mascara
             if (output_format == "all-in-one"):
-                paste_mask = mask_ref.convert("L")
+                paste_mask = mask_ref.resize(image_ref.size).convert("L")
                 image.paste(output, image_bbox, paste_mask)
 
             # Agregar la imagen con mascara a la lista de outputs
