@@ -32,16 +32,16 @@ def create_reference_images(image, mask, min_size=200, padding=30, width=512):
         mask_bbox = (0, mask_bbox[1], mask_bbox[2] - mask_bbox[0], mask_bbox[3])
     if (mask_bbox[1] < 0):
         new_bbox = (mask_bbox[0], 0, mask_bbox[2], mask_bbox[3] - mask_bbox[1])
-    if (new_bbox[2] > mask.width):
+    if (mask_bbox[2] > mask.width):
         diff = new_bbox[2] - mask.width
-        new_bbox = (mask_bbox[0] - diff, mask_bbox[1], mask.width, mask_bbox[3])
+        mask_bbox = (mask_bbox[0] - diff, mask_bbox[1], mask.width, mask_bbox[3])
     if (mask_bbox[3] > mask.height):
         diff = mask_bbox[3] - mask.height
         mask_bbox = (mask_bbox[0], mask_bbox[1] - diff, mask_bbox[2], mask.height)
     
     image_bbox = tuple([int(x * image.width/mask.width) for x in mask_bbox])
 
-    return image.crop(image_bbox).resize((width,width)), mask.crop(mask_bbox).resize((width,width)), image_bbox, mask_bbox
+    return image.crop(image_bbox).resize((width,width)), mask.crop(mask_bbox).resize((width,width)), image_bbox
 
 
 def create_mask(seg_img, color, dillation_size=5, dillation_iters=2, convex_hull=False):
