@@ -102,13 +102,14 @@ class Predictor(BasePredictor):
         image = Image.open(image).convert("RGB")
         seg = Image.open(seg).convert("RGB")
 
+        #Resize image while mantaining aspect ratio
+        if min(image.width, image.height) < 512:
+            ratio = 512 / min(image.width, image.height)
+            image = image.resize((int(image.width * ratio), int(image.height * ratio)), Image.BICUBIC)
+
         self.inpaint_pipe.scheduler = make_scheduler(scheduler, self.inpaint_pipe.scheduler.config)
         generator = torch.Generator("cuda").manual_seed(seed)
-
-        height = int(width * image.height / image.width)
-        height = height - (height % 8)
         
-        image = image.resize((width, height), Image.BILINEAR)
         output_dirs = []
         
         if (not os.path.exists("tmp")):
@@ -121,7 +122,9 @@ class Predictor(BasePredictor):
             color = item.get("color")
             token = item.get("token", lora)
 
-            mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False)).resize((width, height))
+            mask = create_mask(np.array(seg), color, convex_hull=item.get("convex_hull", False))
+
+            image_ref, mask_ref, image_bbox, mask_bbox = create_reference_images(image, mask, min_size=200, padding=30, width=width)
             
             timestart = time.time()
             apply_lora(self.inpaint_pipe, f"{lora_folder}/{lora}.safetensors", weight=weight)
@@ -130,12 +133,13 @@ class Predictor(BasePredictor):
             timestart = time.time()
         
             output = self.inpaint_pipe(prompt, 
-                        image, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, mask_image=mask, 
-                        width=width, height=height).images[0]
+                        image_ref, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, mask_image=mask_ref, 
+                        width=width, height=width).images[0]
             
             # "Pegar" la imagen solo en la mascara
             if (output_format == "all-in-one"):
-                image = paste(output, image, mask)
+                paste_mask = mask_ref.convert("L")
+                image.paste(output, image_bbox, paste_mask)
 
             # Agregar la imagen con mascara a la lista de outputs
             else:
